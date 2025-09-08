@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from OllamaManage.views import analyze_image
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/analyze-image/', analyze_image, name='analyze_image'),
 ]
