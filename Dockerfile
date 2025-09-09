@@ -1,26 +1,25 @@
-# Dockerfile para la app Django
-FROM python:3.12-slim
+FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+# Instalar Tesseract y dependencias completas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    libleptonica-dev \
+    pkg-config \
+    poppler-utils \
+    build-essential \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Dependencias del sistema (mínimas)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-  && rm -rf /var/lib/apt/lists/*
+# Copiar requirements y instalar
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Instalar dependencias de Python
-COPY requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip && pip install -r /app/requirements.txt
-
-# Copiar el código
-COPY . /app
+# Copiar código
+COPY . .
 
 EXPOSE 8000
-
-# Comando por defecto: migrar y arrancar server de desarrollo
-CMD ["bash", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

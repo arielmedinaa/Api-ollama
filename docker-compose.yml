@@ -8,6 +8,7 @@ services:
       - "8000:8000"
     volumes:
       - ./:/app
+      - ./uploads:/tmp/uploads
     environment:
       - DJANGO_DEBUG=1
       - ALLOWED_HOSTS=*
@@ -17,9 +18,10 @@ services:
         condition: service_healthy
       ollama-pull:
         condition: service_completed_successfully
+    restart: unless-stopped
 
   ollama:
-    image: ollama/ollama:0.5.4
+    image: ollama/ollama:latest
     container_name: ocrdjango-ollama
     ports:
       - "11435:11434"
@@ -32,9 +34,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
+    restart: unless-stopped
 
   ollama-pull:
-    image: ollama/ollama:0.5.4
+    image: ollama/ollama:latest
     container_name: ocrdjango-ollama-pull
     depends_on:
       - ollama
@@ -42,11 +45,11 @@ services:
       - OLLAMA_HOST=http://ollama:11434
     entrypoint: >
       /bin/bash -c "
-      until curl --output /dev/null --silent --head --fail http://ollama:11434; do
-        printf 'waiting for ollama server to be ready...'
+      until ollama list; do
+        echo 'waiting for ollama server to be ready...'
         sleep 5
       done;
-      ollama pull llama3.2-vision:11b
+      ollama pull llama3.2:3b
       "
     restart: "no"
 
