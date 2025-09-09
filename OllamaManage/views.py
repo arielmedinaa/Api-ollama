@@ -2,15 +2,18 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 import re
-import ollama
-import pytesseract
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from PIL import Image, ImageEnhance, ImageFilter
+import torch
 
-MODEL_NAME = 'llama3.2:3b'
+MODEL_NAME = 'microsoft/trocr-base-handwritten'
+
+processor = TrOCRProcessor.from_pretrained(MODEL_NAME)
+model = VisionEncoderDecoderModel.from_pretrained(MODEL_NAME)
 
 def preprocess_image(image_file):
     image = Image.open(image_file)
-    image = image.convert('L')
+    image = image.convert('RGB')
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(2)
 
@@ -24,8 +27,12 @@ def preprocess_image(image_file):
 
 def extract_text(image_file):
     image = preprocess_image(image_file)
-    text = pytesseract.image_to_string(image, lang="spa", config="--psm 11")
-    print(text)
+    pixel_values = processor(images=image, return_tensors="pt").pixel_values
+
+    with torch.no_grad():
+        generated_ids = model.generate(pixel_values)
+
+    text = processor.decode(generated_ids[0], skip_special_tokens=True)
     return text
 
 @csrf_exempt
@@ -55,14 +62,14 @@ Devuelve **solo JSON**, nada de texto adicional.
         client = ollama.Client()
 
         def chat_once():
-            return client.chat(model=MODEL_NAME, messages=[{'role': 'user', 'content': user_prompt}])
+            return client.chat(model="llama3.2:3b", messages=[{'role': 'user', 'content': user_prompt}])
 
         try:
             response = chat_once()
         except Exception as e:
             msg = str(e).lower()
             if 'not found' in msg or '404' in msg:
-                client.pull(MODEL_NAME)
+                client.pull("llama3.2:3b")
                 response = chat_once()
             else:
                 raise

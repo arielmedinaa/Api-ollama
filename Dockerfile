@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Instalar Tesseract y dependencias completas
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-spa \
@@ -10,15 +9,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     curl \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copiar requirements y instalar
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    torch==2.2.0+cpu torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
+    transformers==4.44.0
 
-# Copiar código
 COPY . .
 
 EXPOSE 8000

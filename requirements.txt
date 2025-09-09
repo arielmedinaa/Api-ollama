@@ -4,3 +4,5 @@ ollama==0.5.3
 pytesseract==0.3.13
 Pillow
 requests
+torch==2.1.0
+transformers==4.32.0
